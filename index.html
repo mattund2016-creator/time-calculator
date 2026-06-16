@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>时间计算器</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --danger: #dc2626;
+      --ok: #059669;
+      --warn: #d97706;
+      --shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 260px);
+      color: var(--text);
+      padding: env(safe-area-inset-top) 14px env(safe-area-inset-bottom);
+    }
+    .app { max-width: 760px; margin: 0 auto; padding: 12px 0 40px; }
+    header { padding: 14px 4px 10px; }
+    h1 { font-size: 26px; margin: 0 0 8px; letter-spacing: -0.02em; }
+    .subtitle { color: var(--muted); font-size: 14px; line-height: 1.55; }
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(229, 231, 235, 0.9);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      margin: 14px 0;
+    }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .row.wrap { flex-wrap: wrap; }
+    .grow { flex: 1; }
+    label { display: block; font-weight: 650; font-size: 13px; margin: 0 0 7px; }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 13px;
+      padding: 12px 12px;
+      font-size: 16px;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #93c5fd; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12); }
+    button {
+      border: 0;
+      border-radius: 13px;
+      padding: 12px 14px;
+      background: #f3f4f6;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 650;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    button.primary { background: var(--primary); color: white; }
+    button.primary:active { background: var(--primary-dark); }
+    button.danger { color: white; background: var(--danger); }
+    button.ghost { background: transparent; border: 1px solid var(--line); }
+    button.small { padding: 8px 10px; font-size: 13px; border-radius: 10px; }
+    button.full { width: 100%; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .hint { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 8px; }
+    .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+    .tab { background: rgba(255,255,255,.65); border: 1px solid var(--line); }
+    .tab.active { background: var(--text); color: white; }
+    .section-title { display:flex; align-items:center; justify-content:space-between; gap:10px; margin: 2px 0 12px; }
+    .section-title h2 { font-size: 18px; margin: 0; }
+    .pill { font-size: 12px; padding: 5px 9px; border-radius: 999px; background:#eef2ff; color:#3730a3; font-weight:700; }
+    .node {
+      display: grid;
+      grid-template-columns: 32px 1fr 88px 40px;
+      gap: 8px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      margin-bottom: 8px;
+      background: #fff;
+    }
+    .drag { color: var(--muted); text-align:center; font-weight:800; user-select:none; }
+    .node input[type="checkbox"] { width: 20px; height: 20px; }
+    .node input { padding: 10px; font-size: 14px; border-radius: 10px; }
+    .node .minutes { text-align:center; }
+    .delete-x { background:#fee2e2; color:#991b1b; padding: 9px; }
+    .result-list { margin-top: 12px; border-left: 3px solid #bfdbfe; padding-left: 12px; }
+    .result-item { display: grid; grid-template-columns: 72px 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .result-item:last-child { border-bottom: 0; }
+    .time { font-weight: 800; color: var(--primary); font-size: 18px; }
+    .name { font-weight: 700; }
+    .meta { color: var(--muted); font-size: 12px; margin-top: 3px; }
+    .keyline { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .keybox { background:#f8fafc; border:1px solid var(--line); border-radius:15px; padding: 12px; }
+    .keybox .k { color: var(--muted); font-size: 12px; margin-bottom: 5px; }
+    .keybox .v { font-size: 20px; font-weight: 850; }
+    .hidden { display:none !important; }
+    .toast { position: fixed; left: 14px; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); background:#111827; color:#fff; border-radius: 14px; padding: 12px 14px; text-align:center; opacity:0; transform: translateY(14px); transition:.22s ease; pointer-events:none; }
+    .toast.show { opacity:1; transform: translateY(0); }
+    details { background:#f8fafc; border:1px solid var(--line); border-radius:14px; padding: 12px; }
+    summary { font-weight: 750; cursor: pointer; }
+    .footer-actions { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 520px) {
+      .grid, .keyline, .footer-actions { grid-template-columns: 1fr; }
+      .node { grid-template-columns: 28px 1fr 76px 36px; gap: 6px; padding: 8px; }
+      .card { padding: 14px; }
+      h1 { font-size: 24px; }
+    }
+  
+/* upgraded UI */
+body{
+  font-family: -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial;
+  background: linear-gradient(180deg,#f6f7fb,#eef2ff);
+}
+
+.container{
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.card{
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  border: 1px solid rgba(255,255,255,0.6);
+  backdrop-filter: blur(6px);
+}
+
+button{
+  border-radius: 12px !important;
+  padding: 10px 14px !important;
+  transition: all .2s ease;
+}
+
+button:hover{
+  transform: translateY(-1px);
+}
+
+input, select{
+  border-radius: 10px !important;
+  padding: 8px !important;
+}
+
+h1,h2{
+  letter-spacing: -0.02em;
+}
+
+.result{
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>时间计算器</h1>
+      <div class="subtitle">输入目标时间，选择情景，按自定义节点自动倒推。所有数据只保存在本机浏览器，不上传。</div>
+    </header>
+
+    <div class="tabs">
+      <button id="tabCalc" class="tab active" onclick="showTab('calc')">计算</button>
+      <button id="tabEdit" class="tab" onclick="showTab('edit')">情景/节点</button>
+    </div>
+
+    <section id="calcPanel" class="card">
+      <div class="section-title">
+        <h2>快速计算</h2>
+        <span class="pill" id="scenarioCount">0 个情景</span>
+      </div>
+      <div class="grid">
+        <div>
+          <label>选择情景</label>
+          <select id="scenarioSelect"></select>
+        </div>
+        <div>
+          <label>目标时间</label>
+          <input id="targetTime" type="time" value="14:30" />
+        </div>
+      </div>
+      <div class="hint">目标时间一般填“起飞时间 STD”，但也可以是你自定义的任何最终节点。</div>
+
+      <div id="optionalBox" class="card" style="box-shadow:none;background:#f8fafc;margin:14px 0 0;padding:12px;"></div>
+
+      <div class="row wrap" style="margin-top:14px;">
+        <button class="primary grow" onclick="calculate()">生成时间轴</button>
+        <button class="ghost" onclick="copyResult()">复制结果</button>
+      </div>
+
+      <div id="result"></div>
+    </section>
+
+    <section id="editPanel" class="card hidden">
+      <div class="section-title">
+        <h2>编辑情景</h2>
+        <button class="small primary" onclick="newScenario()">新建</button>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label>当前情景</label>
+          <select id="editScenarioSelect" onchange="loadEditor()"></select>
+        </div>
+        <div>
+          <label>情景名称</label>
+          <input id="scenarioName" placeholder="例如：国际客运" />
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:10px;">
+        <div>
+          <label>目标节点名称</label>
+          <input id="targetName" placeholder="例如：起飞" />
+        </div>
+        <div>
+          <label>默认目标时间</label>
+          <input id="defaultTargetTime" type="time" />
+        </div>
+      </div>
+
+      <div class="hint">下面的节点会从目标时间开始依次倒推。勾选表示默认启用；使用时仍可临时开关。</div>
+
+      <div id="nodes" style="margin-top:12px;"></div>
+
+      <div class="row wrap" style="margin-top:12px;">
+        <button onclick="addNode()">添加节点</button>
+        <button onclick="duplicateScenario()">复制情景</button>
+        <button class="danger" onclick="deleteScenario()">删除情景</button>
+      </div>
+
+      <div class="footer-actions" style="margin-top:14px;">
+        <button class="primary" onclick="saveScenario()">保存情景</button>
+        <button class="ghost" onclick="showTab('calc')">去计算</button>
+      </div>
+
+      <div style="margin-top:14px;">
+        <details>
+          <summary>备份 / 恢复数据</summary>
+          <div class="hint">可以把情景数据复制出来备份。换手机或清浏览器数据前建议备份。</div>
+          <div class="row wrap" style="margin-top:10px;">
+            <button class="small" onclick="exportData()">导出</button>
+            <button class="small" onclick="importData()">导入</button>
+          </div>
+          <textarea id="backupBox" rows="5" style="margin-top:10px;" placeholder="导出的数据会出现在这里；导入时也粘贴到这里。"></textarea>
+        </details>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+<script>
+const STORAGE_KEY = 'flight_time_planner_scenarios_v1';
+let scenarios = [];
+let currentResultText = '';
+
+function uid(){ return 's' + Math.random().toString(36).slice(2, 10); }
+function pad(n){ return String(n).padStart(2, '0'); }
+function toMinutes(t){ const [h,m] = t.split(':').map(Number); return h*60 + m; }
+function fromMinutes(total){ total = ((total % 1440) + 1440) % 1440; return `${pad(Math.floor(total/60))}:${pad(total%60)}`; }
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'), 1800); }
+
+function defaultScenarios(){
+  return [
+    {
+      id: uid(), name: '国内客运', targetName: '起飞', defaultTargetTime: '14:30',
+      nodes: [
+        {name:'进场/签到提前', minutes:90, enabled:true},
+        {name:'公司内移动', minutes:10, enabled:true},
+        {name:'通勤', minutes:50, enabled:true},
+        {name:'出门准备', minutes:15, enabled:true},
+        {name:'洗漱换衣', minutes:25, enabled:true},
+        {name:'安全余量', minutes:20, enabled:true}
+      ]
+    },
+    {
+      id: uid(), name: '国际客运', targetName: '起飞', defaultTargetTime: '14:30',
+      nodes: [
+        {name:'进场/签到提前', minutes:120, enabled:true},
+        {name:'领护照/证件', minutes:10, enabled:false},
+        {name:'吃饭', minutes:25, enabled:false},
+        {name:'公司内移动', minutes:10, enabled:true},
+        {name:'通勤', minutes:50, enabled:true},
+        {name:'出门准备', minutes:15, enabled:true},
+        {name:'洗漱换衣', minutes:25, enabled:true},
+        {name:'安全余量', minutes:20, enabled:true}
+      ]
+    },
+    {
+      id: uid(), name: '货运', targetName: '起飞', defaultTargetTime: '02:00',
+      nodes: [
+        {name:'进场/签到提前', minutes:90, enabled:true},
+        {name:'吃饭/夜宵', minutes:25, enabled:false},
+        {name:'公司内移动', minutes:10, enabled:true},
+        {name:'通勤', minutes:45, enabled:true},
+        {name:'出门准备', minutes:15, enabled:true},
+        {name:'洗漱换衣', minutes:25, enabled:true},
+        {name:'安全余量', minutes:20, enabled:true}
+      ]
+    }
+  ];
+}
+
+function load(){
+  try { scenarios = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e){ scenarios=[]; }
+  if(!scenarios.length){ scenarios = defaultScenarios(); saveAll(); }
+  refreshSelectors();
+  loadEditor();
+  renderOptional();
+}
+function saveAll(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(scenarios)); }
+function selectedScenario(){ return scenarios.find(s => s.id === document.getElementById('scenarioSelect').value) || scenarios[0]; }
+function editScenario(){ return scenarios.find(s => s.id === document.getElementById('editScenarioSelect').value) || scenarios[0]; }
+
+function refreshSelectors(){
+  const s1 = document.getElementById('scenarioSelect');
+  const s2 = document.getElementById('editScenarioSelect');
+  const keep1 = s1.value, keep2 = s2.value;
+  s1.innerHTML = ''; s2.innerHTML = '';
+  scenarios.forEach(s => {
+    const o1 = new Option(s.name, s.id); s1.add(o1);
+    const o2 = new Option(s.name, s.id); s2.add(o2);
+  });
+  if(scenarios.some(s=>s.id===keep1)) s1.value = keep1;
+  if(scenarios.some(s=>s.id===keep2)) s2.value = keep2;
+  document.getElementById('scenarioCount').textContent = `${scenarios.length} 个情景`;
+}
+
+function showTab(tab){
+  document.getElementById('calcPanel').classList.toggle('hidden', tab !== 'calc');
+  document.getElementById('editPanel').classList.toggle('hidden', tab !== 'edit');
+  document.getElementById('tabCalc').classList.toggle('active', tab === 'calc');
+  document.getElementById('tabEdit').classList.toggle('active', tab === 'edit');
+  if(tab === 'calc') renderOptional();
+}
+
+function renderOptional(){
+  const box = document.getElementById('optionalBox');
+  const s = selectedScenario();
+  if(!s) return;
+  document.getElementById('targetTime').value = s.defaultTargetTime || '14:30';
+  const rows = s.nodes.map((n, i) => `
+    <label class="row" style="margin:0 0 8px;font-weight:500;">
+      <input type="checkbox" data-run-node="${i}" ${n.enabled ? 'checked' : ''} style="width:20px;height:20px;">
+      <span class="grow">${escapeHtml(n.name)}</span>
+      <span class="hint" style="margin:0;">${Number(n.minutes)||0} 分钟</span>
+    </label>`).join('');
+  box.innerHTML = `<label style="margin-bottom:10px;">本次启用的节点</label>${rows || '<div class="hint">这个情景还没有节点。</div>'}`;
+}
+
+document.addEventListener('change', (e)=>{
+  if(e.target.id === 'scenarioSelect') { renderOptional(); document.getElementById('result').innerHTML=''; }
+});
+
+function calculate(){
+  const s = selectedScenario();
+  if(!s) return;
+  const targetTime = document.getElementById('targetTime').value || s.defaultTargetTime || '00:00';
+  let t = toMinutes(targetTime);
+  const used = Array.from(document.querySelectorAll('[data-run-node]')).map(cb => cb.checked);
+  const timeline = [{time: fromMinutes(t), name: s.targetName || '目标时间', note: '目标节点'}];
+  let total = 0;
+  s.nodes.forEach((n, i) => {
+    if(!used[i]) return;
+    const m = Math.max(0, Number(n.minutes) || 0);
+    t -= m; total += m;
+    timeline.push({time: fromMinutes(t), name: n.name, note: `提前 ${m} 分钟`});
+  });
+  const display = [...timeline].reverse();
+  const first = display[0];
+  const keyOut = display.find(x => /出门|离家/.test(x.name));
+  currentResultText = `${s.name} 时间轴\n目标：${targetTime} ${s.targetName || '目标时间'}\n总倒推：${total} 分钟\n\n` + display.map(x => `${x.time} ${x.name}`).join('\n');
+  document.getElementById('result').innerHTML = `
+    <div class="keyline">
+      <div class="keybox"><div class="k">最早/首个节点</div><div class="v">${first.time}</div><div class="meta">${escapeHtml(first.name)}</div></div>
+      <div class="keybox"><div class="k">${keyOut ? '出门节点' : '总倒推'}</div><div class="v">${keyOut ? keyOut.time : total + ' 分钟'}</div><div class="meta">${keyOut ? escapeHtml(keyOut.name) : escapeHtml(s.name)}</div></div>
+    </div>
+    <div class="result-list">
+      ${display.map(x => `<div class="result-item"><div class="time">${x.time}</div><div><div class="name">${escapeHtml(x.name)}</div><div class="meta">${escapeHtml(x.note)}</div></div></div>`).join('')}
+    </div>`;
+}
+
+async function copyResult(){
+  if(!currentResultText) calculate();
+  try { await navigator.clipboard.writeText(currentResultText); toast('已复制时间轴'); }
+  catch(e){ toast('复制失败，可长按结果手动复制'); }
+}
+
+function loadEditor(){
+  const s = editScenario(); if(!s) return;
+  document.getElementById('scenarioName').value = s.name || '';
+  document.getElementById('targetName').value = s.targetName || '目标时间';
+  document.getElementById('defaultTargetTime').value = s.defaultTargetTime || '14:30';
+  renderNodes(s.nodes || []);
+}
+function renderNodes(nodes){
+  const el = document.getElementById('nodes');
+  el.innerHTML = nodes.map((n, i) => `
+    <div class="node" data-index="${i}">
+      <div class="drag">${i+1}</div>
+      <input data-node-name="${i}" value="${escapeAttr(n.name)}" placeholder="节点名称">
+      <input data-node-min="${i}" class="minutes" type="number" min="0" step="1" value="${Number(n.minutes)||0}">
+      <button class="delete-x small" onclick="removeNode(${i})">×</button>
+      <div></div>
+      <label class="row" style="grid-column:2 / span 2;margin:0;font-weight:500;color:var(--muted);font-size:12px;">
+        <input data-node-enabled="${i}" type="checkbox" ${n.enabled ? 'checked' : ''} style="width:18px;height:18px;"> 默认启用
+      </label>
+      <div class="row" style="gap:4px;justify-content:end;">
+        <button class="small" onclick="moveNode(${i}, -1)">↑</button>
+        <button class="small" onclick="moveNode(${i}, 1)">↓</button>
+      </div>
+    </div>`).join('');
+}
+function collectEditorNodes(){
+  const rows = Array.from(document.querySelectorAll('.node'));
+  return rows.map(row => {
+    const i = row.dataset.index;
+    return {
+      name: document.querySelector(`[data-node-name="${i}"]`).value.trim() || '未命名节点',
+      minutes: Math.max(0, Number(document.querySelector(`[data-node-min="${i}"]`).value) || 0),
+      enabled: document.querySelector(`[data-node-enabled="${i}"]`).checked
+    };
+  });
+}
+function saveScenario(){
+  const s = editScenario(); if(!s) return;
+  s.name = document.getElementById('scenarioName').value.trim() || '未命名情景';
+  s.targetName = document.getElementById('targetName').value.trim() || '目标时间';
+  s.defaultTargetTime = document.getElementById('defaultTargetTime').value || '14:30';
+  s.nodes = collectEditorNodes();
+  saveAll(); refreshSelectors(); loadEditor(); renderOptional(); toast('已保存');
+}
+function addNode(){
+  const s = editScenario(); if(!s) return;
+  s.nodes = collectEditorNodes();
+  s.nodes.push({name:'新节点', minutes:10, enabled:true});
+  renderNodes(s.nodes);
+}
+function removeNode(i){
+  const s = editScenario(); if(!s) return;
+  s.nodes = collectEditorNodes(); s.nodes.splice(i,1); renderNodes(s.nodes);
+}
+function moveNode(i, dir){
+  const s = editScenario(); if(!s) return;
+  s.nodes = collectEditorNodes();
+  const j = i + dir;
+  if(j < 0 || j >= s.nodes.length) return;
+  [s.nodes[i], s.nodes[j]] = [s.nodes[j], s.nodes[i]];
+  renderNodes(s.nodes);
+}
+function newScenario(){
+  const s = { id: uid(), name: '新情景', targetName: '起飞', defaultTargetTime: '14:30', nodes: [{name:'进场/签到提前', minutes:90, enabled:true}, {name:'通勤', minutes:50, enabled:true}, {name:'安全余量', minutes:20, enabled:true}] };
+  scenarios.push(s); saveAll(); refreshSelectors(); document.getElementById('editScenarioSelect').value=s.id; loadEditor(); toast('已新建');
+}
+function duplicateScenario(){
+  const s = editScenario(); if(!s) return;
+  const copy = JSON.parse(JSON.stringify(s)); copy.id = uid(); copy.name = s.name + ' 副本';
+  scenarios.push(copy); saveAll(); refreshSelectors(); document.getElementById('editScenarioSelect').value=copy.id; loadEditor(); toast('已复制');
+}
+function deleteScenario(){
+  if(scenarios.length <= 1) return toast('至少保留一个情景');
+  const s = editScenario(); if(!s) return;
+  if(!confirm(`确定删除“${s.name}”？`)) return;
+  scenarios = scenarios.filter(x => x.id !== s.id); saveAll(); refreshSelectors(); loadEditor(); renderOptional(); toast('已删除');
+}
+function exportData(){
+  const text = JSON.stringify(scenarios, null, 2);
+  document.getElementById('backupBox').value = text;
+  navigator.clipboard?.writeText(text);
+  toast('已导出，并尝试复制到剪贴板');
+}
+function importData(){
+  const text = document.getElementById('backupBox').value.trim();
+  if(!text) return toast('请先粘贴备份数据');
+  try {
+    const data = JSON.parse(text);
+    if(!Array.isArray(data) || !data.length) throw new Error('bad');
+    scenarios = data.map(s => ({ id: s.id || uid(), name: s.name || '未命名情景', targetName: s.targetName || '目标时间', defaultTargetTime: s.defaultTargetTime || '14:30', nodes: Array.isArray(s.nodes) ? s.nodes : [] }));
+    saveAll(); refreshSelectors(); loadEditor(); renderOptional(); toast('已导入');
+  } catch(e){ toast('导入失败，数据格式不对'); }
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/'/g, '&#39;'); }
+
+load();
+</script>
+</body>
+</html>
